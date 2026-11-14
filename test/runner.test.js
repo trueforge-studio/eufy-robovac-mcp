@@ -24,7 +24,7 @@ test('MCP runner does not queue concurrent commands and releases failed operatio
   const fake = fakeProcess();
   const runner = createRunner(fake);
   const first = runner.run('control', ['status']);
-  await assert.rejects(runner.run('control', ['start']), /otra operación/);
+  await assert.rejects(runner.run('control', ['start']), /another operation/);
   assert.equal(fake.children.length, 1);
   fake.children[0].child.emit('close', 1);
   await assert.rejects(first);
@@ -44,7 +44,7 @@ test('pause preempts an active manual motion before starting its own child', asy
   assert.deepEqual(fake.children[0].child.signals, ['SIGINT']);
   assert.equal(fake.children.length, 2);
   assert.equal(fake.children[1].args.at(-1), 'pause');
-  fake.children[1].child.stdout.write('{"message":"Solicitud enviada."}');
+  fake.children[1].child.stdout.write('{"message":"Request sent."}');
   fake.children[1].child.emit('close', 0);
   await pausing;
 });

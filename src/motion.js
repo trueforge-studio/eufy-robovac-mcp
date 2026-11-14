@@ -6,7 +6,7 @@ async function bounded(operation, ms = 3000) {
   let timer;
   try {
     return await Promise.race([Promise.resolve().then(operation), new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error('Tiempo de respuesta agotado.')), ms);
+      timer = setTimeout(() => reject(new Error('Response timed out.')), ms);
     })]);
   } finally { clearTimeout(timer); }
 }
@@ -14,7 +14,7 @@ async function bounded(operation, ms = 3000) {
 function validateMove(direction, durationMs) {
   if (!['forward', 'backward', 'left', 'right'].includes(direction) ||
       !Number.isInteger(durationMs) || durationMs < 100 || durationMs > 5000) {
-    throw new Error('Movimiento inválido: dirección conocida y duración de 100 a 5000 ms.');
+    throw new Error('Invalid movement: use a supported direction and a duration from 100 to 5000 ms.');
   }
 }
 

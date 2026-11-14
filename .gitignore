@@ -7,8 +7,8 @@ node_modules/
 .env-*
 __pycache__/
 *.pyc
-# Private, machine-specific credential recovery helper (not part of the project).
-tools/obtener_clave.py
+# Keep machine-specific utilities outside the public source tree.
+private/
 *.pem
 *.key
 *.p12

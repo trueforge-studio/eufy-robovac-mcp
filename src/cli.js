@@ -9,7 +9,7 @@ async function main() {
     // Node's native loader preserves existing shell environment variables.
     process.loadEnvFile(resolve(__dirname, '..', '.env'));
   } catch (error) {
-    if (error.code !== 'ENOENT') throw new Error('No se pudo leer .env. Revisa sus permisos y formato.');
+    if (error.code !== 'ENOENT') throw new Error('Unable to read .env. Check its permissions and format.');
   }
   const result = await execute(process.argv.slice(2));
   console.log(typeof result === 'string' ? result : JSON.stringify(result, null, 2));

@@ -1,73 +1,89 @@
 # Eufy RoboVac MCP
 
-Servidor MCP y CLI para controlar aspiradoras Eufy RoboVac mediante el protocolo
-local Tuya 3.3. Probado con RoboVac 35C. Proyecto comunitario, sin afiliación con Eufy.
+A local MCP server and command-line controller for Eufy RoboVac vacuums using
+Tuya 3.3. Tested with the **RoboVac 35C**. This is an independent community
+project, not affiliated with Eufy or Anker.
 
-Proyecto independiente con `eufy-robovac` 1.4.6. Permite buscar la IP de tu
-aspiradora configurada, comprobar conexión, consultar estado, limpiar, pausar,
-volver a la base, localizar y cambiar potencia. No necesita correo ni contraseña
-de Eufy para funcionar una vez obtenida la clave local.
+Ask an MCP-enabled assistant to check your vacuum's battery, start cleaning,
+pause, return to its charging base or change suction speed. You can use any
+name for your vacuum in conversation; the server and tools use generic names.
 
-Para usar Robotina mediante peticiones en el chat, consulta [MCP.md](MCP.md).
-El servidor local expone 12 herramientas y utiliza el mismo `.env`.
+## Requirements
 
-## Preparación
+- Node.js 22 or later and npm.
+- A compatible vacuum already paired with the official Eufy app.
+- Your vacuum's Tuya device ID and 16-character local key.
+- Local network access between your computer and vacuum.
 
-Requiere Node.js 22 o superior y npm. Se creó y verificó con Node 22.23.3 y npm
-10.9.9 en macOS. Para instalar:
+Support for other models and firmware versions is not guaranteed. The library
+uses fixed DPS identifiers and Tuya 3.3; it does not implement Tuya 3.4 or 3.5.
+
+## Installation
 
 ```sh
 git clone https://github.com/trueforge-studio/eufy-robovac-mcp.git
 cd eufy-robovac-mcp
 npm ci
-```
-
-La instalación inicial se hizo con el comando solicitado:
-
-```sh
-npm install --save eufy-robovac
-```
-
-Abre una terminal en esta carpeta y prepara la configuración:
-
-```sh
 cp .env.example .env
 chmod 600 .env
 ```
 
-Edita `.env` en tu equipo:
+Edit `.env` on your own computer:
 
-| Variable | Valor |
+| Variable | Value |
 | --- | --- |
-| `EUFY_DEVICE_ID` | Identificador Tuya de tu aspiradora; no el nombre visible ni necesariamente su número de serie |
-| `EUFY_LOCAL_KEY` | Clave local de 16 caracteres ASCII; no la contraseña Wi-Fi ni la de Eufy |
-| `EUFY_IP` | Opcional: IPv4 de la aspiradora, obtenida del router |
-| `EUFY_TIMEOUT_SECONDS` | Espera de descubrimiento, de 1 a 60 segundos; predeterminado 10 |
+| `EUFY_DEVICE_ID` | Your vacuum's Tuya device ID, not its display name or necessarily its serial number |
+| `EUFY_LOCAL_KEY` | Its 16-character ASCII local key, not your Eufy or Wi-Fi password |
+| `EUFY_IP` | Optional vacuum IPv4 address, available from your router |
+| `EUFY_TIMEOUT_SECONDS` | Discovery timeout from 1 to 60 seconds; default: 10 |
 
-El archivo `.env` se carga automáticamente desde la raíz del proyecto. Las
-variables ya definidas en tu terminal tienen prioridad. `.env` está excluido de
-Git, pero sigue siendo un archivo de texto: no lo compartas ni lo subas a la nube.
-No pongas secretos como argumentos en comandos ni los publiques en issues o chats.
+The controller loads `.env` from the project root. Existing shell environment
+variables take precedence. The file is excluded from Git but remains plain text:
+keep it private and never attach it to an issue or paste credentials into a chat.
 
-## Cómo obtener ID y clave local
+## Obtaining device credentials
 
-Primero vincula y comprueba tu 35C en la aplicación oficial EufyHome/eufy Clean.
-El descubrimiento de esta CLI **sólo resuelve la IP de un ID conocido**: necesita
-ID y clave porque el constructor del paquete los exige. No enumera todos los
-equipos, identifica modelos ni recupera claves.
+First verify that your vacuum works in the official EufyHome/eufy Clean app.
+This project's discovery command only finds the IP of a known device ID. It
+requires the ID and key because the underlying library constructor requires them;
+it cannot retrieve a local key or identify an unknown vacuum.
 
-La [guía del proyecto Homebridge del mismo autor](https://github.com/apexad/homebridge-eufy-robovac#configuration)
-remite a [eufy-clean-local-key-grabber](https://github.com/Rjevski/eufy-clean-local-key-grabber).
-Ese extractor se declara sin mantenimiento; sus instrucciones y autenticación
-pueden fallar con cuentas o versiones actuales. Revisa su documentación antes de
-usarlo y maneja tus credenciales sólo en tu equipo. No está instalado ni ejecutado
-por este proyecto. Si ya tienes una integración local configurada, puedes reutilizar
-su ID y clave vigentes. El README original también describe un método histórico
-con registros Android y una app antigua; no garantiza funcionar hoy.
+The [upstream Homebridge configuration guide](https://github.com/apexad/homebridge-eufy-robovac#configuration)
+points to [eufy-clean-local-key-grabber](https://github.com/Rjevski/eufy-clean-local-key-grabber).
+That separate tool is unmaintained, and its authentication method may not work
+with current accounts or services. Review its documentation before using it.
+It is not bundled or run by this project. If you already have a working local
+integration, you may be able to reuse its current device ID and key.
 
-## Uso
+The MCP server does not need your Eufy email or password. Once configured, it
+uses the local key for LAN control. Pairing and credential retrieval may still
+require Eufy's cloud services. Re-pairing can change the local key.
 
-Comienza con operaciones que no mueven el robot:
+## Connect an MCP client
+
+See [MCP.md](MCP.md) for setup, tool names and troubleshooting. With Codex CLI
+installed, run this from the project root:
+
+```sh
+codex mcp add eufy-robovac -- "$(command -v node)" "$PWD/src/mcp-server.mjs"
+```
+
+Reload the MCP connection or restart your client. On macOS, allow the client
+under **System Settings → Privacy & Security → Local Network**.
+
+Example requests:
+
+- “How much battery does my vacuum have?”
+- “Start cleaning.”
+- “Pause the vacuum.”
+- “Send it back to its charging base.”
+- “Set suction to standard.”
+
+Sending a command does not confirm that the physical action has finished.
+
+## Command-line usage
+
+Start with commands that do not move the vacuum:
 
 ```sh
 npm start -- help
@@ -76,12 +92,12 @@ npm start -- connect
 npm start -- status
 ```
 
-`discover` escucha anuncios del ID configurado incluso si definiste `EUFY_IP`.
-No guarda automáticamente la IP. Puedes copiarla a `.env` para evitar el
-descubrimiento en las siguientes operaciones. `connect` abre y cierra la conexión;
-`status` consulta batería, estado, modo, potencia y error cuando estén disponibles.
+`discover` searches by the configured device ID, even when `EUFY_IP` is set.
+It does not save the result automatically. Set `EUFY_IP` to skip discovery on
+later commands. `status` reports the fields the vacuum provides: battery,
+activity, mode, suction speed, errors and play/pause state.
 
-Cuando quieras ejecutar acciones:
+Actions:
 
 ```sh
 npm start -- start
@@ -91,62 +107,73 @@ npm start -- locate
 npm start -- speed standard
 npm start -- speed boost
 npm start -- speed max
+npm start -- speed off
+npm start -- mode auto
+npm start -- mode spot
 npm start -- mode edge
+npm start -- mode small-room
 ```
 
-`start`, `pause` y `home` afectan al movimiento; `locate` activa el aviso de
-localización. Cada ejecución desconecta al terminar. Un comando enviado no
-garantiza que el robot haya completado la acción: verifica con `status` o en el
-equipo. Si ocurre un timeout, comprueba el estado antes de repetir la orden.
-El límite total de una ejecución es la espera configurada más 15 segundos.
+`start`, `home` and cleaning modes can move the vacuum. `locate` activates its
+audible locator. Suction `off` does not stop the wheels. Some functions may
+behave differently or be unavailable depending on firmware. Each command
+disconnects when it finishes. Its total time limit is the configured discovery
+timeout plus 15 seconds. After a timeout, check the vacuum before retrying.
 
-## Compatibilidad y límites
+For a brief, supervised manual movement:
 
-Eufy [confirma que la 35C admite Wi-Fi/app](https://service.eufy.com/article-description/Which-RoboVac-models-support-WiFi-app).
-La [integración comunitaria eufy_vacuum](https://github.com/bostonmhauer/eufy_vacuum)
-incluye 35C/T2117 entre sus modelos. Esto respalda probar control local, pero **no
-certifica esta biblioteca npm ni todos los firmwares**. En esta unidad, el usuario
-ya confirmó estado, inicio, pausa y movimiento manual usando el proyecto.
+```sh
+npm run move -- forward 500
+```
 
-El código instalado fija Tuya **3.3**, TCP **6668** y un mapa de propiedades DPS.
-No implementa la API de nube de Eufy, Tuya 3.4/3.5, emparejamiento, mapas de la
-casa ni actualización de firmware. Si el descubrimiento anuncia otro protocolo,
-la CLI rechaza la operación. Con IP explícita no hay anuncio para verificarlo y
-se intenta directamente 3.3. El firmware puede cambiar el protocolo o los DPS.
+Directions are `forward`, `backward`, `left` and `right`. The duration must be
+100–5000 milliseconds. The controller attempts to pause before and after moving;
+Ctrl+C also attempts to pause. A failed network connection can prevent stopping,
+so use the physical button if needed. Timing does not measure distance or angle.
 
-La aspiradora usa Wi-Fi de **2,4 GHz**. El computador puede usar Ethernet o 5 GHz
-si ambos llegan a la misma red local y el router permite comunicarse entre ellos.
-El descubrimiento escucha UDP **6666/6667** y normalmente necesita el mismo
-segmento de red. Redes de invitados, aislamiento de clientes, VLAN, VPN y firewall
-pueden bloquearlo. Con IP explícita se evita UDP, pero sigue siendo necesaria
-conectividad TCP al robot. No abras estos puertos a Internet.
+## Network and protocol limitations
 
-Si falla: verifica primero la app oficial, IP actual y alimentación; cierra la
-app u otras integraciones si compiten por la conexión; revisa permisos de red
-local de macOS. Una reserva DHCP ayuda a mantener la IP estable. Si vuelves a
-emparejar el robot, la clave puede cambiar. Esta CLI controla por LAN, pero el
-alta inicial y la obtención de claves pueden depender de servicios Eufy.
+The RoboVac 35C uses 2.4 GHz Wi-Fi. Your computer can use Ethernet or 5 GHz if the
+router allows both devices to communicate. Discovery listens on UDP 6666/6667
+and normally requires the same local network segment. Control uses TCP 6668.
+Guest networks, client isolation, VLANs, VPNs and firewalls can block access.
+Do not expose these ports to the Internet.
 
-## API revisada y verificaciones
+With an explicit IP, the library attempts Tuya 3.3 directly. Without an IP,
+discovery checks the advertised protocol and rejects a different version.
+The project does not provide cloud control, pairing, firmware updates, maps,
+position tracking, odometry or room recognition. No routes or shapes are saved.
+Room routes would require future design and calibration from a known position;
+timed movements cannot correct their position after encountering obstacles.
 
-Se inspeccionaron `dist/index.js`, sus tipos y TuyAPI instalados, además del
-[repositorio original](https://github.com/apexad/eufy-robovac). Se usa su exportación
-`RoboVac`, `api.find()`, `connect()`, `getStatuses(true)`, `startCleaning()`,
-`setPlayPause(false)`, `goHome()`, `setFindRobot(true)` y `setCleanSpeed()`.
-Se evita `pause()` porque en 1.4.6 envía `true` al DPS 2; la CLI envía `false`.
-El descubrimiento se hace explícitamente porque `doWork()` captura el error y
-continúa. No se modificó el paquete instalado.
+If connection fails, check the official app, power, current IP and local network
+permissions. Close other controllers if they compete for the connection. A DHCP
+reservation helps keep the vacuum's IP stable.
+
+## Development and verification
 
 ```sh
 npm run check
 npm test
+npm run mcp:check
+npm run mcp:check -- --battery
 npm audit
 ```
 
-Las pruebas automatizadas usan un robot simulado y comprueban pausa,
-descubrimiento sin movimiento, errores, desconexión, filtrado de salida,
-movimiento temporizado, cancelación y el protocolo MCP por STDIO. No mueven el
-hardware. Para una lectura real por MCP usa `npm run mcp:check -- --battery`.
-Se añadió un override `debug: ^4.3.1` para corregir una vulnerabilidad baja en la
-dependencia indirecta antigua; el archivo de bloqueo conserva la versión resuelta.
-No se imprime el objeto interno del dispositivo ni se activa el debug del paquete.
+Tests cover command mapping, discovery failures, credential-safe output, timed
+movement, cancellation, concurrency and the real MCP STDIO handshake. They use
+simulated hardware and do not move a vacuum. The optional `--battery` check
+makes a real read-only request. The test client is a development dependency;
+install with `npm ci` to use it.
+
+The controller uses `eufy-robovac` 1.4.6. Its `pause()` method incorrectly writes
+`true` to DPS 2, so this project calls `setPlayPause(false)` instead. Discovery
+is explicit because the library's `doWork()` catches discovery failures and
+continues. The installed library is not modified. A `debug` dependency override
+avoids a known vulnerability in the old transitive version.
+
+## References
+
+- [Upstream eufy-robovac library](https://github.com/apexad/eufy-robovac)
+- [Eufy Wi-Fi compatible models](https://service.eufy.com/article-description/Which-RoboVac-models-support-WiFi-app)
+- [Community model reference including 35C/T2117](https://github.com/bostonmhauer/eufy_vacuum)

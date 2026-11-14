@@ -1,73 +1,86 @@
-# Robotina desde el chat
+# Eufy RoboVac MCP setup
 
-Servidor MCP local que puedes registrar con el nombre `robotina`. Codex lo inicia por
-STDIO usando Node; no abre puertos ni necesita un servicio en Internet. El
-controlador carga la clave del `.env` de este proyecto. No se copió la clave ni
-la contraseña Eufy a la configuración de Codex: el controlador sólo necesita el ID
-y la clave local configurados en tu propio `.env`. «Robotina» es el alias usado
-en las herramientas; configura las credenciales de tu aspiradora.
+This local STDIO server exposes generic tools for an Eufy RoboVac. It opens no
+HTTP ports and does not require a hosted service. Each controller process reads
+the device ID and local key from the project's `.env`. Your account password is
+not needed or stored in the MCP configuration.
 
-## Activar y comprobar
+Tool names do not depend on your vacuum's nickname. Use whichever name you prefer
+when speaking to your assistant.
 
-Después de instalar dependencias y configurar `.env`, ejecuta desde la raíz del
-proyecto (requiere tener el comando `codex` instalado):
+## Register with Codex
+
+Install dependencies and configure `.env` as described in [README.md](README.md).
+With Codex CLI installed, run from the project root:
 
 ```sh
-codex mcp add robotina -- "$(command -v node)" "$PWD/src/mcp-server.mjs"
+codex mcp add eufy-robovac -- "$(command -v node)" "$PWD/src/mcp-server.mjs"
 ```
 
-1. Reinicia la conexión MCP desde los ajustes de servidores MCP de Codex. Si
-   no aparece Robotina, reinicia la aplicación y vuelve a este chat.
-2. En macOS, revisa **Ajustes del Sistema → Privacidad y seguridad → Red local**
-   y permite acceso a Codex. Si pruebas desde Terminal, permite también Terminal.
-3. Pide: **«¿Cuánta batería tiene Robotina?»**. El asistente debe usar
-   `robotina_bateria` y dar una lectura nueva, no repetir una anterior.
+Reload the server connection in your MCP client. If it does not appear, restart
+the client. On macOS, enable the client under **System Settings → Privacy &
+Security → Local Network**. Terminal needs its own permission for CLI tests.
 
-Que un comando funcione en Terminal no garantiza que Codex tenga el mismo
-permiso de red local. Si el MCP conecta y enumera herramientas, pero la consulta
-del robot falla, comprueba ese permiso y que ambos estén en la misma LAN.
+Then ask: **“How much battery does my vacuum have?”** The assistant should call
+`robovac_get_battery` and report a fresh reading.
 
-## Herramientas disponibles
+For other STDIO-compatible clients, configure:
 
-| Herramienta | Petición de ejemplo / comportamiento |
+- **Command:** the absolute path to your Node.js executable.
+- **Arguments:** the absolute path to `src/mcp-server.mjs` in this checkout.
+- **Working directory:** optional; the controller resolves `.env` from the project.
+- **Environment credentials:** none needed when using the project's `.env`.
+
+Use absolute paths so startup does not depend on the client's current directory.
+If you move the checkout, update its registered path.
+
+## Available tools
+
+| Tool | Behavior |
 | --- | --- |
-| `robotina_capacidades` | «¿Qué puedes hacer con Robotina?»; catálogo y límites, sin red |
-| `robotina_estado` | «¿Cómo está?»; lectura nueva de batería, actividad, potencia y errores |
-| `robotina_bateria` | «¿Cuánta batería le queda?»; porcentaje actual |
-| `robotina_limpiar` | «Ponla a aspirar»; inicia limpieza automática |
-| `robotina_pausar` | «Párala»; pausa e interrumpe movimiento manual de este MCP |
-| `robotina_volver_base` | «Mándala a dormir / descansar / cargar»; orden de volver a la base |
-| `robotina_localizar` | «Hazla sonar»; aviso sonoro, no ubicación en un mapa |
-| `robotina_potencia` | Cambiar a `standard`, `boost`, `max` u `off` (sin succión) |
-| `robotina_modo` | `auto`, `spot`, `edge`, `small-room`; puede iniciar movimiento |
-| `robotina_mover` | Dirección `forward`, `backward`, `left`, `right`, por 100–5000 ms; intenta pausar al terminar |
-| `robotina_conexion` | Comprobar conexión sin mover el robot |
-| `robotina_descubrir` | Buscar la IP del ID ya configurado; no obtiene claves |
+| `robovac_get_capabilities` | List features, tested model and limitations without connecting to hardware |
+| `robovac_get_status` | Fetch current battery, activity, mode, speed and error information |
+| `robovac_get_battery` | Fetch a fresh battery percentage |
+| `robovac_start_cleaning` | Start automatic cleaning |
+| `robovac_pause` | Pause; interrupt a manual movement from this server first |
+| `robovac_return_to_base` | Request a return to the charging base; does not confirm arrival |
+| `robovac_locate` | Activate the audible locator; does not return a physical position |
+| `robovac_set_speed` | Set `level` to `standard`, `boost`, `max` or `off` |
+| `robovac_set_mode` | Set `mode` to `auto`, `spot`, `edge` or `small-room`; may start movement |
+| `robovac_move` | Move in a `direction` for `durationMs`, then attempt to pause |
+| `robovac_check_connection` | Connect and disconnect without moving the vacuum |
+| `robovac_discover` | Find the IP for the configured device ID; does not retrieve credentials |
 
-Las herramientas se anuncian al asistente con parámetros y descripciones; no
-necesitas escribir sus nombres técnicos. Una orden enviada no confirma que el
-robot haya llegado a la base o terminado una acción. Los modos y potencias que
-no se han probado en esta unidad siguen sujetos al firmware.
+Manual directions are `forward`, `backward`, `left` and `right`. Movement duration
+must be an integer from 100 to 5000 ms. Suction `off` does not pause the wheels.
+Firmware support varies; RoboVac 35C is the tested model, not a guarantee of
+compatibility with every Eufy vacuum.
 
-El servidor sólo permite una operación activa. Otras peticiones se rechazan en
-vez de acumularse para ejecutarse después. Pausar y volver a la base cancelan
-primero la operación activa. Cancelar un movimiento manual intenta enviar pausa;
-si se pierde la conexión, no puede garantizar detener físicamente al robot.
+The server includes tool descriptions and instructions so assistants can map
+natural language to these actions. Requests to send the vacuum to sleep, rest or
+recharge map to returning to its base. No hardware sleep command is implemented.
 
-## Recorridos futuros
+## Execution and cancellation
 
-No hay recorridos ni figuras predefinidos.
+The server accepts one active hardware operation at a time. It rejects additional
+commands instead of queuing stale actions. Pause and return-to-base requests
+cancel the active operation first. MCP cancellation and connection closure also
+stop the controller process; a manual movement attempts to pause before exiting.
 
-Los futuros caminos a cocina, pieza o living deberán diseñarse y calibrarse desde
-un punto de partida y orientación conocidos. Esta API no proporciona mapas,
-posición, odometría ni reconocimiento de habitaciones. Una secuencia de tiempos
-puede desviarse si encuentra obstáculos o cambia el piso; no equivale a navegación
-autónoma. La función general de movimiento breve queda disponible como base para
-esas pruebas futuras, sin rutas predefinidas.
+No command response guarantees that a physical action has finished. Read-only
+tools are marked as such; movement tools are not marked idempotent because
+repeating a timed movement changes the result. If Wi-Fi fails, a pause command
+may not reach the vacuum: use its physical button when needed.
 
-## Diagnóstico y mantenimiento
+## Routes and positioning
 
-Desde la carpeta del proyecto:
+No routes or shapes are predefined. This API provides no maps, current position,
+odometry, distance measurement or room recognition. Future routes would need a
+known starting position, orientation and calibration. Timed movement cannot
+recover its location after encountering an obstacle or slipping on a different
+surface.
+
+## Diagnostics
 
 ```sh
 npm run check
@@ -76,18 +89,28 @@ npm run mcp:check
 npm run mcp:check -- --battery
 ```
 
-La primera prueba MCP sólo conecta y enumera herramientas. Con `--battery` hace
-una lectura real, sin mover el robot. Usa el cliente de desarrollo instalado con
-`npm ci`. El servidor en sí sólo requiere las dependencias de producción.
+`mcp:check` performs an actual STDIO handshake and lists tools without touching
+hardware. `--battery` adds a real read-only battery request. The MCP test client
+is a development dependency installed by `npm ci`.
 
-`npm run mcp` inicia el servidor en modo STDIO: espera a un cliente MCP, no muestra
-un menú interactivo. Las consultas y acciones se ejecutan en procesos separados;
-sus mensajes no se mezclan con el protocolo ni muestran credenciales.
+`npm run mcp` starts a STDIO server waiting for an MCP client. It is not an
+interactive terminal menu. Child controller output is kept separate from the
+MCP protocol, and errors do not disclose credentials.
 
-Si se mueve esta carpeta, actualiza la ruta del servidor registrado en Codex.
-La configuración actual se puede comprobar con `codex mcp get robotina` y retirar
-con `codex mcp remove robotina`.
+If tools are listed but hardware requests fail, check network reachability,
+local network permissions, device credentials and Tuya 3.3 compatibility. A
+successful command from Terminal does not prove that another application has
+permission to access the same LAN device.
 
-Fuentes: [MCP en Codex](https://learn.chatgpt.com/docs/extend/mcp?surface=app),
-[SDK oficial MCP](https://ts.sdk.modelcontextprotocol.io/v2/get-started/first-server),
-[permiso de red local en macOS](https://support.apple.com/en-gb/guide/mac-help/mchla4f49138/mac).
+Inspect or remove the registration with:
+
+```sh
+codex mcp get eufy-robovac
+codex mcp remove eufy-robovac
+```
+
+## References
+
+- [MCP in Codex](https://learn.chatgpt.com/docs/extend/mcp?surface=app)
+- [Official MCP TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/v2/get-started/first-server)
+- [Local network permissions on macOS](https://support.apple.com/en-gb/guide/mac-help/mchla4f49138/mac)

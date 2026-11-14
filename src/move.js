@@ -9,7 +9,7 @@ async function main() {
   const [direction, duration, ...extra] = process.argv.slice(2);
   const durationMs = Number(duration);
   validateMove(direction, durationMs);
-  if (extra.length) throw new Error('Argumentos adicionales.');
+  if (extra.length) throw new Error('Unexpected arguments.');
   try { process.loadEnvFile(resolve(__dirname, '..', '.env')); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   const config = readConfig(process.env);
@@ -22,13 +22,13 @@ async function main() {
   try {
     if (!config.ip) {
       await bounded(() => robot.api.find({ timeout: config.timeout }), (config.timeout + 1) * 1000);
-      if (robot.api.device.version !== '3.3') throw new Error('Protocolo incompatible.');
+      if (robot.api.device.version !== '3.3') throw new Error('Unsupported protocol.');
     }
     controller.signal.throwIfAborted();
     await bounded(() => robot.connect(), 10000);
     await move(robot, direction, durationMs, { signal: controller.signal });
     console.log(JSON.stringify({ direction, durationMs, pauseRequested: true,
-      message: 'Movimiento por tiempo terminado; orden de pausa enviada. No se midió distancia ni ángulo.' }));
+      message: 'Timed movement finished; pause requested. Distance and angle were not measured.' }));
   } finally {
     robot.api.removeListener('disconnected', abort);
     await bounded(() => robot.disconnect());
@@ -38,6 +38,6 @@ async function main() {
 }
 
 main().then(() => process.exit(0), () => {
-  console.error('Movimiento interrumpido o fallido. Comprueba el robot; la pausa requiere conexión.');
+  console.error('Movement interrupted or failed. Check the vacuum; pausing requires a connection.');
   process.exit(1);
 });

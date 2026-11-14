@@ -26,13 +26,13 @@ function fixture(overrides = {}) {
 
 test('help and invalid commands never construct a robot', async () => {
   const create = () => { throw new Error('Unexpected construction'); };
-  assert.match(await execute([], {}, create), /Uso:/);
-  await assert.rejects(execute(['speed', 'turbo'], env, create), /inválidos/);
+  assert.match(await execute([], {}, create), /Usage:/);
+  await assert.rejects(execute(['speed', 'turbo'], env, create), /Invalid/);
 });
 test('validates secrets, address and timeout without exposing values', () => {
   assert.throws(() => readConfig({ ...env, EUFY_LOCAL_KEY: 'secret' }), /16/);
   assert.throws(() => readConfig({ ...env, EUFY_IP: 'invalid' }), /IPv4/);
-  assert.throws(() => readConfig({ ...env, EUFY_TIMEOUT_SECONDS: 'Infinity' }), /entero/);
+  assert.throws(() => readConfig({ ...env, EUFY_TIMEOUT_SECONDS: 'Infinity' }), /integer/);
 });
 test('pause writes false and always disconnects', async () => {
   const f = fixture();
@@ -72,7 +72,7 @@ test('status returns only whitelisted information', async () => {
 });
 test('action failure still disconnects and does not expose library error', async () => {
   const f = fixture({ goHome: async () => { throw new Error(env.EUFY_LOCAL_KEY); } });
-  await assert.rejects(execute(['home'], env, f.create), /No se pudo/);
+  await assert.rejects(execute(['home'], env, f.create), /Unable/);
   assert.deepEqual(f.calls, ['connect', 'disconnect']);
 });
 test('control commands call the installed API with expected values', async () => {

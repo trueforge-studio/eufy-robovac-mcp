@@ -11,14 +11,14 @@ function createRunner({ spawnProcess = spawn } = {}) {
   async function run(kind, args, { signal } = {}) {
     if (kind === 'control') validateCommand(args);
     else if (kind === 'move') validateMove(args[0], Number(args[1]));
-    else throw new Error('Operación inválida.');
+    else throw new Error('Invalid operation.');
     signal?.throwIfAborted();
     // Stop/dock preempt a manual movement; never queue stale movement commands.
     if (active && ['pause', 'home'].includes(args[0]) && kind === 'control') {
       active.controller.abort();
       await active.done.catch(() => {});
     }
-    if (active) throw new Error('Robotina está atendiendo otra operación. Espera o pide pausar.');
+    if (active) throw new Error('The vacuum is handling another operation. Wait or request a pause.');
     const controller = new AbortController();
     const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
     const record = { controller };
@@ -44,15 +44,15 @@ function createRunner({ spawnProcess = spawn } = {}) {
         output += chunk;
         if (output.length > 65536) controller.abort();
       });
-      child.on('error', () => { cleanup(); reject(new Error('No se pudo iniciar el controlador de Robotina.')); });
+      child.on('error', () => { cleanup(); reject(new Error('Unable to start the vacuum controller.')); });
       child.on('close', code => {
         cleanup();
         if (code !== 0 || combined.aborted) {
-          reject(new Error('Operación fallida o cancelada. Comprueba la conexión y el estado del robot antes de repetirla.'));
+          reject(new Error('Operation failed or cancelled. Check the connection and vacuum status before retrying.'));
           return;
         }
         try { resolveResult(JSON.parse(output)); }
-        catch { reject(new Error('El controlador devolvió una respuesta inválida.')); }
+        catch { reject(new Error('The controller returned an invalid response.')); }
       });
     });
     try { return await record.done; }
