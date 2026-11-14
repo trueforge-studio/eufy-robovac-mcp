@@ -1,0 +1,37 @@
+{
+  "name": "eufy-robovac-mcp",
+  "version": "1.0.0",
+  "description": "Local MCP server and CLI for Eufy RoboVac vacuums using Tuya 3.3; tested with RoboVac 35C",
+  "main": "src/control.js",
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "node --test",
+    "check": "node --check src/cli.js && node --check src/control.js && node --check src/motion.js && node --check src/move.js && node --check src/robot-runner.js && node --check src/mcp-server.mjs",
+    "mcp": "node src/mcp-server.mjs",
+    "move": "node src/move.js",
+    "mcp:check": "node tools/check-mcp.mjs"
+  },
+  "keywords": ["eufy", "robovac", "mcp", "tuya", "robot-vacuum"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trueforge-studio/eufy-robovac-mcp.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
+    "eufy-robovac": "^1.4.6",
+    "zod": "^4.6.7"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "overrides": {
+    "debug": "^4.3.1"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.4.0"
+  }
+}

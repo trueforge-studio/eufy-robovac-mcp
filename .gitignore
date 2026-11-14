@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.env-*
+__pycache__/
+*.pyc
+# Private, machine-specific credential recovery helper (not part of the project).
+tools/obtener_clave.py
+*.pem
+*.key
+*.p12
+*.pfx
